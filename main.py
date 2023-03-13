@@ -2,7 +2,35 @@ import numpy as np
 import face_recognition
 import cv2
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
+import time
+import requests
+import os
+from datetime import datetime, timedelta
+import time
+import asyncio
+
+from telegram_bot import telega
+
+# Асинхронная функция
+# async def check_folder():
+#     while True:
+#         files = os.listdir('dataset')
+#         # if len(files) not in num:
+
+#         print("Функция успешна!!!!")
+#         await asyncio.sleep(0.5)
+
+
+# async def main():
+
+
+
+
+screenshot_interval = timedelta(seconds=30)
+
+# Определяем время последнего скриншота (для проверки интервала)
+last_screenshot_time = datetime.now()
 
 path = 'KnownFaces'
 images = []
@@ -42,7 +70,13 @@ print("Декодирование закончено")
 
 cap = cv2.VideoCapture(0)
 
+if not os.path.exists('dataset'):
+    os.makedirs('dataset')
+
+
 while True:
+    num = []
+    telega()
     success, img = cap.read()
     imgS = cv2.resize(img, (0, 0), None, 0.25, 0.25)
     imgS = cv2.cvtColor(imgS, cv2.COLOR_BGR2RGB)
@@ -66,5 +100,61 @@ while True:
             cv2.putText(img, name, (x1 + 6, y2 - 6), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 2)
             markAttendance(name)
 
+            if not os.listdir('dataset'):
+                # Если папка пустая, сделать скриншот и назвать его именем
+                now = datetime.now()
+                dtString = now.strftime("%d-%m-%Y %H:%M:%S")
+                cv2.imwrite(f"dataset/{name} {dtString}.jpg", img)
+                last_screenshot_time = datetime.now()
+            else:
+                # Проверить, было ли уже сделано фото для этого человека
+                files = [f for f in os.listdir('dataset') if os.path.isfile(os.path.join('dataset', f))]
+                file_names = [os.path.splitext(f)[0] for f in files]
+                if name not in file_names:
+                    # Если фото еще не сделано, проверить время последнего скриншота
+                    time_since_last_screenshot = (datetime.now() - last_screenshot_time).total_seconds()
+                    if time_since_last_screenshot >= screenshot_interval.total_seconds():
+                        # Если прошло больше времени, чем задано в интервале, сделать новый скриншот и обновить время
+                        now = datetime.now()
+                        dtString = now.strftime("%d-%m-%Y %H:%M:%S")
+                        cv2.imwrite(f"dataset/{name} {dtString}.jpg", img)
+                        last_screenshot_time = datetime.now()
+                else:
+                    # Если папка с набором данных заполнена, напечатается Функция отправки завершена.
+                    if len(os.listdir('dataset')) >= 100:
+                        print('Send function completed')
+            
+            # Обновить значение переменной num
+            
+
     cv2.imshow("WebCam", img)
     cv2.waitKey(1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# async def run():
+#     task1 = asyncio.create_task(main()) # Создание задачи для main()
+#     task2 = asyncio.create_task(check_folder()) # Создание задачи для check_folder()
+#     await asyncio.gather(task1, task2) # Ожидание завершения обеих задач
+
+# asyncio.run(run())
